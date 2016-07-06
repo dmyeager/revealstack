@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					postgres import code
+					<pre><code>
+#!/usr/bin/python
+import os
+import sys
+import xml.etree.ElementTree
+from datetime import datetime
+import psycopg2
+import urllib.parse
+
+def import_energy_data(file_name, db_url):
+	if not os.path.isfile(file_name):
+		print('File ' + file_name + ' not found')
+		sys.exit()
+
+	urllib.parse.uses_netloc.append('postgres')
+	url = urllib.parse.urlparse(db_url)
+
+	conn = psycopg2.connect(dbname="davidyeager", database="davidyeager")
+	cur = conn.cursor()
+	cur.execute("CREATE TABLE energy_data (duration integer, start_dt timestamp without time zone, energy integer)")
+
+	root = xml.etree.ElementTree.parse(file_name).getroot()
+	ns = {'d': 'http://www.w3.org/2005/Atom',
+	      'naesb': 'http://naesb.org/espi'}
+	for interval in root.findall('d:entry/d:content/naesb:IntervalBlock/naesb:IntervalReading', ns):
+		duration = int(interval.find('naesb:timePeriod/naesb:duration', ns).text)
+		start_dt = datetime.fromtimestamp(int(interval.find('naesb:timePeriod/naesb:start', ns).text))
+		energy = int(interval.find('naesb:value', ns).text)
+		cur.execute("INSERT INTO energy_data (duration, start_dt, energy) VALUES (%s, %s, %s)", (duration, start_dt, energy))
+		print(duration, start_dt, energy)
+
+	conn.commit()
+	print("committed")
+	cur.close()
+	conn.close()
+
+if __name__ == "__main__":
+	import_energy_data(sys.argv[1], sys.argv[2])
+					</code></pre>
+				</section>
+				<section>
+					query data by weekday
+					<pre><code>
+select date_part('dow', start_dt), avg(energy)
+from energy_data
+group by date_part('dow', start_dt)
+order by 1
+					</code></pre>
+				</section>
+				<section>
+					results
+					<table>
+						<thead>
+							<th>date_part</th>
+							<th>avg</th>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Sunday</td>
+								<td>1229.5358711566617862</td>
+							</tr>
+							<tr>
+								<td>Monday</td>
+								<td>1269.2916666666666667</td>
+							</tr>
+							<tr>
+								<td>Tuesday</td>
+								<td>1361.396577380952381</td>
+							</tr>
+							<tr>
+								<td>Wednesday</td>
+								<td>1196.9501488095238095</td>
+							</tr>
+							<tr>
+								<td>Thursday</td>
+								<td>1267.9013157894736842</td>
+							</tr>
+							<tr>
+								<td>Friday</td>
+								<td>1257.8128654970760234</td>
+							</tr>
+							<tr>
+								<td>Saturday</td>
+								<td>1198.0350877192982456</td>
+							</tr>
+						</tbody>
+					</table>
+				</section>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
