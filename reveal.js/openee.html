@@ -43,7 +43,7 @@ def import_energy_data(file_name, db_url):
 	urllib.parse.uses_netloc.append('postgres')
 	url = urllib.parse.urlparse(db_url)
 
-	conn = psycopg2.connect(dbname="davidyeager", database="davidyeager")
+	conn = psycopg2.connect(database=url.path[1:], user=url.username, password=url.password, host=url.hostname, port=url.port)
 	cur = conn.cursor()
 	cur.execute("CREATE TABLE energy_data (duration integer, start_dt timestamp without time zone, energy integer)")
 
