@@ -5,7 +5,7 @@ var port = process.env.PORT || 8080;
 
 app.use('/', express.static(__dirname));
 app.get('/', function (req, res) {
-	res.send('hi there')
+	res.redirect('/reveal.js/openee.html')
 });
 
 app.listen(port, function () {
