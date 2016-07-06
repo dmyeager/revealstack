@@ -1,0 +1,46 @@
+<html>
+	<head>
+		<title>chart</title>
+		<script
+			  src="https://code.jquery.com/jquery-3.0.0.min.js"
+			  integrity="sha256-JmvOoLtYsmqlsWxa7mDSLMwa6dZ9rrIdtrrVYRnDRH0="
+			  crossorigin="anonymous"></script>
+		<script src="http://code.highcharts.com/highcharts.js"></script>
+	</head>
+	<body>
+		<div id="container">
+		</div>
+
+		<input type="radio" name="byCategory" value="byDayOfWeek" checked>Day of Week</input>
+		<input type="radio" name="byCategory" value="byHour">Hour</input>
+
+		<script type="text/javascript">
+			$(document).ready((function () {
+				$('input[type=radio][name=byCategory]').change(drawChart);
+				drawChart();
+			}));
+
+			function drawChart() {
+				var byCategory = $('input[name="byCategory"]:checked').val();
+				var url = '/api/' + byCategory;
+				$.getJSON( url, function( data ) {
+					var chartData = [];
+					$.each(data, function(index, value) {
+						var o = {};
+						o.name = String(value.date_part);
+						o.data = [parseFloat(value.avg)];
+						chartData.push(o);
+					});
+
+					$('#container').highcharts({
+						chart: { type: 'bar' },
+						title: { text: 'Energy Use' },
+						xAxis: { categories: ['Energy'] },
+						yAxis: { title: { text: 'Score' } },
+						series: chartData
+					});
+				});
+			}
+		</script>
+	</body>
+</html>

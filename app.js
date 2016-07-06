@@ -6,6 +6,8 @@ var port = process.env.PORT || 8080;
 var pg = require('pg');
 var connString = process.env.DATABASE_URL || 'postgres://localhost:5432/davidyeager';
 
+app.use(express.static('public'));
+
 app.get('/api/byDayOfWeek', function (req, res) {
 	var client = new pg.Client(connString);
 	var results = [];
@@ -32,10 +34,6 @@ app.get('/api/byHour', function (req, res) {
 		client.end();
 		res.json(results);
 	});
-});
-
-app.get('/chart', function (req, res) {
-	res.sendfile(__dirname, '/chart.html');
 });
 
 app.use('/', express.static(__dirname));
